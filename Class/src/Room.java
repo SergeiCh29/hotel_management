@@ -1,36 +1,93 @@
-public class Room {
-    private int RoomID;
-    private String RoomNumber;
-    private String RoomType;
-    private double RoomPrice;
-    private boolean IsAvailable = true;
+import java.util.ArrayList;
+import java.util.List;
 
-    public Room(int RoomID, String RoomNumber, String RoomType, double RoomPrice, boolean IsAvailable) {
-        this.RoomID = RoomID;
-        this.RoomNumber = RoomNumber;
-        this.RoomType = RoomType;
-        this.RoomPrice = RoomPrice;
-        this.IsAvailable = IsAvailable;
+public class Room {
+    enum RoomType {SINGLE, DOUBLE, DELUXE, SUITE}
+
+    private int roomNumber;
+    private RoomType roomType;
+    private double roomPricePerNight;
+    private boolean isAvailable;
+    private List<String> amenities = new ArrayList<>();
+    private String status;
+    private int maxOccupancy;
+
+    public Room(int RoomNumber, RoomType RoomType, double RoomPricePerNight, boolean IsAvailable, int maxOccupancy) {
+        this.roomNumber = RoomNumber;
+        this.roomType = RoomType;
+        this.roomPricePerNight = RoomPricePerNight;
+        this.maxOccupancy = maxOccupancy;
+        this.isAvailable = IsAvailable;
+        this.status = "Clean";
     }
 
-    public int getRoomID() { return RoomID; }
-    public void setRoomID(int RoomID) { this.RoomID = RoomID; }
+    public int getRoomNumber() {
+        return roomNumber;
+    }
 
-    public String getRoomNumber() { return RoomNumber; }
-    public void setRoomNumber(String RoomNumber) { this.RoomNumber = RoomNumber; }
+    public void setRoomNumber(int RoomNumber) {
+        this.roomNumber = RoomNumber;
+    }
 
-    public String getRoomType() { return RoomType; }
-    public void setRoomType(String RoomType) { this.RoomType = RoomType; }
+    public RoomType getRoomType() {
+        return roomType;
+    }
 
-    public double getRoomPrice() { return RoomPrice; }
-    public void setRoomPrice(double RoomPrice) { this.RoomPrice = RoomPrice; }
+    public void setRoomType(RoomType RoomType ) {
+        this.roomType = RoomType;
+    }
 
-    public boolean getIsAvailable() { return IsAvailable; }
-    public void setIsAvailable(boolean IsAvailable) { this.IsAvailable = IsAvailable; }
+    public double getRoomPricePerNight() {
+        return roomPricePerNight;
+    }
+
+    public void setRoomPricePerNight( double RoomPricePerNight ) {
+        this.roomPricePerNight = RoomPricePerNight;
+    }
+
+    public boolean IsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable( boolean IsAvailable ) {
+        this.isAvailable = IsAvailable;
+    }
+
+    public List<String> getAmenities() {return amenities;}
+    public void setAmenities(List<String> amenities) {
+        this.amenities = amenities;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public int getMaxOccupancy() {
+        return maxOccupancy;
+    }
+
+    public void setMaxOccupancy(int maxOccupancy) {
+        this.maxOccupancy = maxOccupancy;
+    }
 
     @Override
     public String toString(){
-        return "Room: " + RoomNumber + ", Room type: " + RoomType + ", Room price: " + RoomPrice + ", Availability: " + IsAvailable;
+        return "Room: " + roomNumber + ", Room type: " + roomType + ", Room price: €" + roomPricePerNight + ", Maximum occupancy: " + maxOccupancy + ", Availability: " + isAvailable + "" + ", Status: " + status;
+    }
+
+    public double calculatePriceForStay(int nights) {
+        return roomPricePerNight *nights;
+    }
+
+    public boolean canAccommodate(int guests) {
+        if (guests > maxOccupancy) {
+            return false;
+        }
+        return true;
     }
 }
 
