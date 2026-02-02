@@ -1,51 +1,51 @@
-public class Person {
-    private int ID;
-    private String FirstName;
-    private String LastName;
-    private String Firstname;
-    private String Lastname;
-    private String Email;
-    private String PhoneNumber;
-    private String Address;
+abstract public class Person {
+    private final int id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String address;
 
-    public Person(Integer ID, String Firstname, String Lastname, String Email, String PhoneNumber, String Address) {
-            this.ID = ID;
-            this.Firstname = Firstname;
-            this.Lastname = Lastname;
-            this.Email = Email;
-            this.PhoneNumber = PhoneNumber;
-            this.Address = Address;
+    public Person(int id, String firstName, String lastName, String email, String phone, String address) {
+            this.id = id;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.email = email;
+            this.phone = phone;
+            this.address = address;
         }
 
-    public int getID() { return ID; }
-    public void setID(int ID) { this.ID = ID; }
+    public int getId() { return id; }
 
-    public String getFirstname() { return Firstname; }
-    public void setFirstname(String firstname) { this.Firstname = firstname; }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getLastname() {
-        return Lastname;
-    }
-    public void setLastname(String lastname) { this.Lastname = lastname; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getFullName(){ return firstName + " " + lastName; }
 
     public String getEmail() {
-        return Email;
+        return email;
     }
-    public void setEmail(String email) { this.Email = email; }
+    public void setEmail(String email) {
+        if (email != null && email.contains("@") && email.contains(".")) {
+            this.email = email;
+        } else {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
 
-    public String getPhoneNumber() {
-        return PhoneNumber;
-    }
-    public void setPhoneNumber(String phoneNumber) { this.PhoneNumber = phoneNumber; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getAddress() {
-        return Address;
-    }
-    public void setAddress(String address) { this.Address = address; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
 
     @Override
     public String toString(){
-        return "ID: " + ID + ", Firstname: " + Firstname + ", Lastname: " + Lastname + ", Email: " + Email  + ", PhoneNumber: " + PhoneNumber + ", Address: " + Address;
+        return "id: " + id + ", FirstName: " + firstName + ", Lastname: " + lastName + ", Email: " + email + ", Phone: " + phone + ", Address: " + address;
     }
 }
 
