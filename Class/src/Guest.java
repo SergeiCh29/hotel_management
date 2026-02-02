@@ -1,21 +1,54 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Guest extends Person{
-    private String LoyaltyLevel;
-    private int TotalBookings;
+    private int loyaltyPoints;
+    private String nationality;
+    private List<Booking> bookingHistory = new ArrayList<>();
+    private Guest guest;
 
-    public Guest(int ID, String Firstname, String Lastname, String Email, String PhoneNumber, String Address, String LoyaltyLevel, int TotalBookings) {
+    public Guest(int ID, String Firstname, String Lastname, String Email, String PhoneNumber, String Address, int loyaltyPoints, String nationality, List<Booking> bookingHistory) {
         super(ID, Firstname, Lastname, Email, PhoneNumber, Address);
-        this.LoyaltyLevel = LoyaltyLevel;
-        this.TotalBookings = TotalBookings;
-        }
+        this.loyaltyPoints = loyaltyPoints;
+        this.nationality = nationality;
+        this.bookingHistory = bookingHistory;
+        this.guest = guest;
+    }
 
-    public String getLoyaltyLevel() { return LoyaltyLevel; }
-    public void setLoyaltyLevel(String LoyaltyLevel) { this.LoyaltyLevel = LoyaltyLevel; }
+    public int getLoyaltyPoints() { return loyaltyPoints; }
+    public void setLoyaltyPoints(int loyaltyPoints) { this.loyaltyPoints = loyaltyPoints; }
 
-    public int getTotalBookings() { return TotalBookings; }
-    public void setTotalBookings(int TotalBookings) { this.TotalBookings = TotalBookings; }
+    public String getNationality() { return nationality; }
+    public void setNationality(String nationality) { this.nationality = nationality; }
+
+    public List<Booking> getBookingHistory() { return bookingHistory; }
+    public void setBookingHistory(List<Booking> bookingHistory) { this.bookingHistory = bookingHistory; }
 
     @Override
     public String toString(){
-        return super.toString() + ", Loyalty Level: " + LoyaltyLevel + ", Total Bookings: " + TotalBookings;
+        return super.toString() + ", Nationality: " + nationality + ", Loyalty points: " + loyaltyPoints + ", Total Bookings: " + bookingHistory.size();
+    }
+
+    public int getTotalNightsStayed() {
+        int totalNights = 0;
+        for (Booking booking : bookingHistory) {
+            totalNights += booking.getNumberOfNights();
+        }
+        return totalNights;
+    }
+
+    public void addBooking(Booking booking) {
+        bookingHistory.add(booking);
+    }
+
+    public int addLoyaltyPoints (int points) {
+        return this.loyaltyPoints = loyaltyPoints+points;
+    }
+
+    public boolean isVIP() {
+        if (loyaltyPoints > 1000 || bookingHistory.size() > 5) {
+            return true;
+        }
+        return false;
     }
 }
