@@ -5,7 +5,6 @@ public class Guest extends Person{
     private int loyaltyPoints;
     private String nationality;
     private List<Booking> bookingHistory = new ArrayList<>();
-    private Guest guest;
 
     public Guest(int ID, String Firstname, String Lastname, String Email, String PhoneNumber, String Address, int loyaltyPoints, String nationality, List<Booking> bookingHistory) {
         super(ID, Firstname, Lastname, Email, PhoneNumber, Address);

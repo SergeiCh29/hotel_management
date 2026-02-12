@@ -2,20 +2,27 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 public class Booking {
+    public enum BookingStatus {
+        CONFIRMED('Confirmed'),
+        CHECKED_IN('Checked-in'),
+        CHECKED_OUT('Checked-out'),
+        CANCELLED('Cancelled')
+    }
+
     private int bookingId;
     private Guest guest;
     private Room room;
     private LocalDate checkInDate, checkOutDate;
     private int numberOfGuests;
     private double totalPrice;
-    private String status;
-    public enum BookingStatus {
-        CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
-    }
+    private BookingStatus status;
+    private boolean isPaid = false;
+    private String paymentMethod;
+
 //    private String paymentMethod;
 //    private boolean isPAid;
 
-    public Booking(int bookingId, Guest guest, Room room, LocalDate checkInDate, LocalDate checkOutDate, int numberOfGuests, String status) {
+    public Booking(int bookingId, Guest guest, Room room, LocalDate checkInDate, LocalDate checkOutDate, int numberOfGuests) {
         this.bookingId = bookingId;
         this.guest = guest;
         guest.addBooking(this);
@@ -24,7 +31,9 @@ public class Booking {
         this.checkOutDate = checkOutDate;
         this.numberOfGuests = numberOfGuests;
         this.totalPrice = room.getRoomPricePerNight() * guest.getTotalNightsStayed();
-        this.status = status;
+        this.status = BookingStatus.CONFIRMED;
+        this.isPaid = false;
+        this.paymentMethod = "";
     }
 
     public long getNumberOfNights(){
@@ -50,8 +59,17 @@ public class Booking {
     public void setTotalPrice(double TotalPrice) { this.totalPrice = TotalPrice; }
 
     public int getNumberOfGuests() { return numberOfGuests; }
-
     public void setNumberOfGuests(int numberOfGuests) { this.numberOfGuests = numberOfGuests; }
+
+    public BookingStatus getStatus() {return status;}
+    public void setStatus(BookingStatus status) {this.status = status;}
+
+    public boolean isPaid() { return isPaid; }
+    public void setIsPaid(boolean isPaid) { this.isPaid = isPaid; }
+
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String PaymentMethod) { this.paymentMethod = PaymentMethod; }
+
 
     @Override
     public String toString(){
@@ -64,7 +82,7 @@ public class Booking {
 
     public boolean isActive() {
         LocalDate currentDate = LocalDate.now();
-        if ((currentDate.isAfter(checkInDate) || currentDate.isEqual(checkInDate)) && currentDate.isBefore(checkOutDate) && status.equals("Checked-in")) {
+        if ((currentDate.isAfter(checkInDate) || currentDate.isEqual(checkInDate)) && currentDate.isBefore(checkOutDate) && status == BookingStatus.CHECKED_IN) {
             return true;
         }
         return false;
@@ -72,7 +90,7 @@ public class Booking {
 
     public boolean isUpcoming() {
         LocalDate currentDate = LocalDate.now();
-        if (currentDate.isBefore(checkInDate) && status.equals(BookingStatus.CHECKED_IN)) {
+        if (currentDate.isBefore(checkInDate) && status == BookingStatus.CONFIRMED) {
             return true;
         }
         return false;
@@ -80,7 +98,7 @@ public class Booking {
 
     public boolean isCompleted() {
         LocalDate currentDate = LocalDate.now();
-        if ((currentDate.isAfter(checkOutDate) || currentDate.isEqual(checkOutDate)) && status.equals(BookingStatus.CHECKED_OUT)) {
+        if ((currentDate.isAfter(checkOutDate) || currentDate.isEqual(checkOutDate)) && status ==  BookingStatus.CHECKED_OUT) {
             return true;
         }
         return false;

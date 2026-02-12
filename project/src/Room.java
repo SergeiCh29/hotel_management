@@ -2,23 +2,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Room {
-    enum RoomType {SINGLE, DOUBLE, DELUXE, SUITE}
+    enum RoomType {
+        SINGLE ('Single'),
+        DOUBLE ('Double'),
+        DELUXE ('Deluxe'),
+        SUITE ('Suite')
+    }
 
+    enum RoomStatus {
+        CLEAN("Clean"),
+        DIRTY("Dirty"),
+        MAINTENANCE("Maintenance"),
+        OCCUPIED("Occupied");
+    }
     private int roomNumber;
     private RoomType roomType;
     private double roomPricePerNight;
     private boolean isAvailable;
     private List<String> amenities = new ArrayList<>();
-    private String status;
+    private RoomStatus status;
     private int maxOccupancy;
+    private boolean hasBalcony;
 
-    public Room(int RoomNumber, RoomType RoomType, double RoomPricePerNight, boolean IsAvailable, int maxOccupancy) {
+    public Room(int RoomNumber, RoomType RoomType, double RoomPricePerNight, boolean IsAvailable, int maxOccupancy, boolean hasBalcony) {
         this.roomNumber = RoomNumber;
         this.roomType = RoomType;
         this.roomPricePerNight = RoomPricePerNight;
         this.maxOccupancy = maxOccupancy;
         this.isAvailable = IsAvailable;
-        this.status = "Clean";
+        this.hasBalcony = hasBalcony;
+        this.status = RoomStatus.CLEAN;
     }
 
     public int getRoomNumber() {
@@ -58,13 +71,8 @@ public class Room {
         this.amenities = amenities;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public RoomStatus getStatus() { return status; }
+    public void setStatus(RoomStatus status) { this.status = status; }
 
     public int getMaxOccupancy() {
         return maxOccupancy;
@@ -74,13 +82,21 @@ public class Room {
         this.maxOccupancy = maxOccupancy;
     }
 
+    public boolean isHasBalcony() {
+        return hasBalcony;
+    }
+
+    public void setHasBalcony(boolean hasBalcony) {
+        this.hasBalcony = hasBalcony;
+    }
+
     @Override
     public String toString(){
         return "Room: " + roomNumber + ", Room type: " + roomType + ", Room price: €" + roomPricePerNight + ", Maximum occupancy: " + maxOccupancy + ", Availability: " + isAvailable + "" + ", Status: " + status;
     }
 
     public double calculatePriceForStay(int nights) {
-        return roomPricePerNight *nights;
+        return roomPricePerNight * nights;
     }
 
     public boolean canAccommodate(int guests) {
