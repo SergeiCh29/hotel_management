@@ -1,13 +1,9 @@
+package logic;
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 public class Booking {
-    public enum BookingStatus {
-        CONFIRMED('Confirmed'),
-        CHECKED_IN('Checked-in'),
-        CHECKED_OUT('Checked-out'),
-        CANCELLED('Cancelled')
-    }
 
     private int bookingId;
     private Guest guest;
@@ -73,7 +69,7 @@ public class Booking {
 
     @Override
     public String toString(){
-        return "Booking id: " + bookingId + ", Guest id: " + guest.getId() + ", Room number: " + room.getRoomNumber() + ", Check-in date: " + checkInDate + ", Check-out date: " + checkOutDate + ", Number of guests: " + numberOfGuests + ", Total price: " + totalPrice + ", Status: " + status;
+        return "logic.Booking id: " + bookingId + ", logic.Guest id: " + guest.getId() + ", logic.Room number: " + room.getRoomNumber() + ", Check-in date: " + checkInDate + ", Check-out date: " + checkOutDate + ", Number of guests: " + numberOfGuests + ", Total price: " + totalPrice + ", Status: " + status;
     }
 
     public double calculateTotalPrice(int nights) {

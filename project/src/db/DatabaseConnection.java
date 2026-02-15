@@ -1,18 +1,15 @@
+package db;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-    private final String url;
-    private final String user;
-    private final String password;
+    private static final String URL =  "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER =  "postgres";
+    private static final String PASSWORD = "05sept2007";
 
-    public DatabaseConnector(String url, String user, String password) {
-        this.url = url;
-        this.user = user;
-        this.password = password;
-    }
 
     private static Connection connection = null;
 

@@ -1,36 +1,29 @@
+package logic;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Room {
-    enum RoomType {
-        SINGLE ('Single'),
-        DOUBLE ('Double'),
-        DELUXE ('Deluxe'),
-        SUITE ('Suite')
-    }
 
-    enum RoomStatus {
-        CLEAN("Clean"),
-        DIRTY("Dirty"),
-        MAINTENANCE("Maintenance"),
-        OCCUPIED("Occupied");
-    }
     private int roomNumber;
     private RoomType roomType;
     private double roomPricePerNight;
-    private boolean isAvailable;
-    private List<String> amenities = new ArrayList<>();
-    private RoomStatus status;
     private int maxOccupancy;
     private boolean hasBalcony;
+    private List<String> amenities = new ArrayList<>();
+    private boolean isAvailable;
+    private RoomStatus status;
 
-    public Room(int RoomNumber, RoomType RoomType, double RoomPricePerNight, boolean IsAvailable, int maxOccupancy, boolean hasBalcony) {
-        this.roomNumber = RoomNumber;
+
+
+    public Room(int roomNumber, RoomType RoomType, double RoomPricePerNight, int maxOccupancy, boolean hasBalcony, boolean IsAvailable) {
+        this.roomNumber = roomNumber;
         this.roomType = RoomType;
         this.roomPricePerNight = RoomPricePerNight;
         this.maxOccupancy = maxOccupancy;
-        this.isAvailable = IsAvailable;
         this.hasBalcony = hasBalcony;
+//        for (String amenity : amenities) {this.amenities.add(amenity);}
+        this.isAvailable = IsAvailable;
         this.status = RoomStatus.CLEAN;
     }
 
@@ -58,7 +51,7 @@ public class Room {
         this.roomPricePerNight = RoomPricePerNight;
     }
 
-    public boolean IsAvailable() {
+    public boolean isAvailable() {
         return isAvailable;
     }
 
@@ -77,24 +70,23 @@ public class Room {
     public int getMaxOccupancy() {
         return maxOccupancy;
     }
-
     public void setMaxOccupancy(int maxOccupancy) {
         this.maxOccupancy = maxOccupancy;
     }
 
-    public boolean isHasBalcony() {
-        return hasBalcony;
-    }
-
+    public boolean hasBalcony() {return hasBalcony;}
     public void setHasBalcony(boolean hasBalcony) {
         this.hasBalcony = hasBalcony;
     }
 
     @Override
     public String toString(){
-        return "Room: " + roomNumber + ", Room type: " + roomType + ", Room price: €" + roomPricePerNight + ", Maximum occupancy: " + maxOccupancy + ", Availability: " + isAvailable + "" + ", Status: " + status;
+        return "logic.Room: " + roomNumber + ", logic.Room type: " + roomType + ", logic.Room price: €" + roomPricePerNight + ", Maximum occupancy: " + maxOccupancy + ", Availability: " + isAvailable + "" + ", Status: " + status;
     }
 
+    public void addAmenity(String item) {
+        amenities.add(item);
+    }
     public double calculatePriceForStay(int nights) {
         return roomPricePerNight * nights;
     }

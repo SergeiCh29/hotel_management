@@ -1,3 +1,5 @@
+package logic;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -6,12 +8,10 @@ public class Guest extends Person{
     private String nationality;
     private List<Booking> bookingHistory = new ArrayList<>();
 
-    public Guest(int ID, String Firstname, String Lastname, String Email, String PhoneNumber, String Address, int loyaltyPoints, String nationality, List<Booking> bookingHistory) {
-        super(ID, Firstname, Lastname, Email, PhoneNumber, Address);
+    public Guest(int ID, String Firstname, String Lastname, String Email, String PhoneNumber, int loyaltyPoints, String nationality) {
+        super(ID, Firstname, Lastname, Email, PhoneNumber);
         this.loyaltyPoints = loyaltyPoints;
         this.nationality = nationality;
-        this.bookingHistory = bookingHistory;
-        this.guest = guest;
     }
 
     public int getLoyaltyPoints() { return loyaltyPoints; }

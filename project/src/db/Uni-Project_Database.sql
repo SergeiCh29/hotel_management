@@ -1,4 +1,4 @@
-CREATE TYPE room_type AS ENUM ('Single', 'Double', 'Deluxe', 'Suite');
+CREATE TYPE room_type AS ENUM ('SINGLE', 'DOUBLE', 'DELUXE', 'SUITE');
 CREATE TYPE room_status AS ENUM ('Clean', 'Dirty', 'Maintenance', 'Occupied');
 CREATE TYPE booking_status AS ENUM ('Confirmed', 'Checked-in', 'Checked-out', 'Cancelled', 'No-show');
 
@@ -7,27 +7,26 @@ CREATE TABLE guests (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE,
-    phobe VARCHAR(50),
-
+    phone VARCHAR(50),
     loyalty_points INTEGER DEFAULT 0,
     nationality VARCHAR(50)
 );
 
 CREATE TABLE rooms (
-    room_number INTEGER PRIMARY KEY,
+    room_number SERIAL PRIMARY KEY,
     room_type room_type NOT NULL,
     price_per_night DECIMAL(10, 2) NOT NULL,
-    is_available BOOLEAN DEFAULT TRUE,
-    amenities TEXT,
-    status room_status DEFAULT 'Clean',
     max_occupancy INTEGER NOT NULL,
-    has_balcony BOOLEAN DEFAULT FALSE
+    has_balcony BOOLEAN DEFAULT FALSE,
+    amenities TEXT,
+    is_available BOOLEAN DEFAULT TRUE,
+    status room_status DEFAULT 'Clean'
 );
 
 CREATE TABLE  bookings (
     booking_id SERIAL PRIMARY KEY,
-    guest_id INTEGER NOT NULL REFERENCES guests(guest_id) ON DELETE RESTRICT,
-    room_number INTEGER NOT NULL REFERENCES rooms(room_number) ON DELETE RESTRICT,
+    guests_guest_id INTEGER NOT NULL REFERENCES guests(guest_id) ON DELETE RESTRICT,
+    room_room_number INTEGER NOT NULL REFERENCES rooms(room_number) ON DELETE RESTRICT,
     check_in_date DATE NOT NULL,
     check_out_date DATE NOT NULL,
     number_of_guests INTEGER NOT NULL,
