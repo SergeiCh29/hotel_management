@@ -26,10 +26,10 @@ public class Booking {
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.numberOfGuests = numberOfGuests;
-        this.totalPrice = room.getRoomPricePerNight() * guest.getTotalNightsStayed();
         this.status = BookingStatus.CONFIRMED;
         this.isPaid = false;
         this.paymentMethod = "";
+        recalculateTotalPrice();
     }
 
     public long getNumberOfNights(){
@@ -39,16 +39,26 @@ public class Booking {
     public int getBookingId() { return bookingId; }
     public void setBookingId(int BookingID) { this.bookingId = BookingID; }
 
+    public Guest getGuest() { return guest; }
+    public void setGuest(Guest guest) { this.guest = guest; }
+
+    public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
+
     public LocalDate getCheckInDate() { return checkInDate; }
     public void setCheckInDate(LocalDate CheckInDate) {
-        if (CheckInDate != null)
+        if (CheckInDate != null) {
             this.checkInDate = CheckInDate;
+            recalculateTotalPrice();
+        }
     }
 
     public LocalDate getCheckOutDate() { return checkOutDate; }
     public void setCheckOutDate(LocalDate CheckOutDate) {
-        if (CheckOutDate != null && CheckOutDate.isAfter(checkInDate))
+        if (CheckOutDate != null && CheckOutDate.isAfter(checkInDate)) {
             this.checkOutDate = CheckOutDate;
+            recalculateTotalPrice();
+        }
     }
 
     public double getTotalPrice() { return totalPrice; }
@@ -72,8 +82,23 @@ public class Booking {
         return "logic.Booking id: " + bookingId + ", logic.Guest id: " + guest.getId() + ", logic.Room number: " + room.getRoomNumber() + ", Check-in date: " + checkInDate + ", Check-out date: " + checkOutDate + ", Number of guests: " + numberOfGuests + ", Total price: " + totalPrice + ", Status: " + status;
     }
 
-    public double calculateTotalPrice(int nights) {
-        return this.totalPrice = room.calculatePriceForStay(nights);
+//    public double calculateTotalPrice(int nights) {
+//        return this.totalPrice = room.calculatePriceForStay(nights);
+//    }
+
+    public void recalculateTotalPrice() throws IllegalStateException {
+        if (room == null) {
+            throw new IllegalStateException("Cannot calculate price: room is null");
+        }
+        if (checkInDate == null || checkOutDate == null) {
+            throw new IllegalStateException("Cannot calculate price: dates are null");
+        }
+        if (checkOutDate.isBefore(checkInDate) || checkOutDate.isEqual(checkInDate)) {
+            throw new IllegalStateException("Cannot calculate price: check-out must be after check-in");
+        }
+
+        long nights = getNumberOfNights();
+        this.totalPrice = room.getRoomPricePerNight() * nights;
     }
 
     public boolean isActive() {

@@ -23,7 +23,7 @@ public class RoomDAO {
             pstmt.setInt(4, room.getMaxOccupancy());
             pstmt.setBoolean(5, room.hasBalcony());   // add getter if missing
             // Convert amenities list to comma-separated string
-            String amenitiesStr = String.join(", ", room.getAmenities());
+            String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(6, amenitiesStr);
             pstmt.setBoolean(7, room.isAvailable());
             pstmt.setString(8, room.getStatus().name());
@@ -84,7 +84,7 @@ public class RoomDAO {
             pstmt.setDouble(2, room.getRoomPricePerNight());
             pstmt.setInt(3, room.getMaxOccupancy());
             pstmt.setBoolean(4, room.hasBalcony());
-            String amenitiesStr = String.join(", ", room.getAmenities());
+            String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(5, amenitiesStr);
             pstmt.setBoolean(6, room.isAvailable());
             pstmt.setString(7, room.getStatus().name());
@@ -96,8 +96,6 @@ public class RoomDAO {
             e.printStackTrace();
         }
     }
-}
-
 // UPDATE availability
 public void updateAvailability(int roomNumber, boolean isAvailable) {
     String sql = "UPDATE rooms SET is_available = ? WHERE room_number = ?";
@@ -171,10 +169,12 @@ public void addRoomsBatch(List<Room> rooms) {
     String sql = "INSERT INTO rooms (room_number, room_type, price_per_night, " +
             "max_occupancy, has_balcony, amenities, is_available, status) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    Connection conn = null;
+    PreparedStatement pstmt = null;
 
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+    try {
+        conn = DatabaseConnection.getConnection();
+        pstmt = conn.prepareStatement(sql);
         conn.setAutoCommit(false); // disable auto-commit for batch
         int count = 0;
         int batchSize = 1000;
@@ -199,14 +199,16 @@ public void addRoomsBatch(List<Room> rooms) {
         conn.commit(); // commit transaction
 
     } catch (SQLException e) {
-        // Rollback on error
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            conn.rollback();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        if (conn != null) {
+            try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
         }
         e.printStackTrace();
+    } finally {
+        // close resources
+        try { if (pstmt != null) pstmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+        try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
     }
 }
 }
+
 

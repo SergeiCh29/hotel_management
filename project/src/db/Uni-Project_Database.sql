@@ -44,5 +44,5 @@ CREATE INDEX idx_rooms_type ON rooms(room_type);
 CREATE INDEX idx_rooms_price ON rooms(price_per_night);
 CREATE INDEX idx_rooms_available ON rooms(is_available);
 CREATE INDEX idx_bookings_dates ON bookings(check_in_date, check_out_date);
-CREATE INDEX idx_bookings_guest ON bookings(guest_id);
+CREATE INDEX idx_bookings_guest ON bookings(guests_guest_id);
 CREATE INDEX idx_bookings_status ON bookings(status);

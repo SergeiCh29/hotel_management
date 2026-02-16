@@ -11,19 +11,26 @@ public class GuestDAO {
     public void addGuest(Guest guest) {
         String sql = "INSERT INTO guests (first_name, " +
                 "last_name, email, phone, loyalty_points, nationality) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?) RETURNING guest_id";
 
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(2, guest.getFirstName());
-            pstmt.setString(3, guest.getLastName());
-            pstmt.setString(4, guest.getEmail());
-            pstmt.setString(5, guest.getPhone());
-            pstmt.setInt(6, guest.getLoyaltyPoints());
-            pstmt.setString(7, guest.getNationality());
+            pstmt.setString(1, guest.getFirstName());
+            pstmt.setString(2, guest.getLastName());
+            pstmt.setString(3, guest.getEmail());
+            pstmt.setString(4, guest.getPhone());
+            pstmt.setInt(5, guest.getLoyaltyPoints());
+            pstmt.setString(6, guest.getNationality());
 
-            pstmt.executeUpdate();
-            System.out.println("Guest added successfully" + guest.getId());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int generatedId = rs.getInt("guest_id");
+                    guest.setGuestId(generatedId);
+                    System.out.println("Booking inserted with ID: " + generatedId);
+                } else {
+                    throw new SQLException("Creating booking failed, no ID returned.");
+                }
+            }
 
         } catch (SQLException e) {
             if (e.getSQLState().equals("23505")) {
