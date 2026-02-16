@@ -1,7 +1,7 @@
 package logic;
 
 abstract public class Person {
-    private final int id;
+    private int id;
     private String firstName;
     private String lastName;
     private String email;
@@ -16,6 +16,7 @@ abstract public class Person {
         }
 
     public int getId() { return id; }
+    public void setId(int id){this.id = id;}
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }

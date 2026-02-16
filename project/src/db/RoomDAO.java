@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RoomDAO {
-    public void addRoom(Room room) {
+    public void addRoom(Room room)  throws SQLException{
         String sql = "INSERT INTO rooms (room_number,room_type, price_per_night, " +
                 "max_occupancy, has_balcony, amenities, is_available, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, CAST(? AS room_type), ?, ?, ?, ?, ?, CAST(? AS room_status))";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -26,13 +26,11 @@ public class RoomDAO {
             String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(6, amenitiesStr);
             pstmt.setBoolean(7, room.isAvailable());
-            pstmt.setString(8, room.getStatus().name());
+            pstmt.setString(8, room.getStatus().getDbValue());
 
             pstmt.executeUpdate();
             System.out.println("Room added: " + room.getRoomNumber());
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
@@ -76,8 +74,8 @@ public class RoomDAO {
     }
 
     public void updateRoom(Room room) {
-        String sql = "UPDATE rooms SET room_type=?, price_per_night=?, max_occupancy=?, " +
-                "has_balcony=?, amenities=?, is_available=?, status=? WHERE room_number=?";
+        String sql = "UPDATE rooms SET room_type=CAST(? AS room_type), price_per_night=?, max_occupancy=?, " +
+                "has_balcony=?, amenities=?, is_available=?, status=CAST(? AS room_status) WHERE room_number=?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, room.getRoomType().name());
@@ -87,7 +85,7 @@ public class RoomDAO {
             String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(5, amenitiesStr);
             pstmt.setBoolean(6, room.isAvailable());
-            pstmt.setString(7, room.getStatus().name());
+            pstmt.setString(7, room.getStatus().getDbValue());
             pstmt.setInt(8, room.getRoomNumber());
             pstmt.executeUpdate();
             System.out.println("Room updated successfully: " + room.getRoomNumber());
@@ -134,7 +132,7 @@ private Room extractRoomFromResultSet(ResultSet rs) throws SQLException {
     int maxOccupancy = rs.getInt("max_occupancy");
     boolean hasBalcony = rs.getBoolean("has_balcony");
     boolean isAvailable = rs.getBoolean("is_available");
-    RoomStatus status = RoomStatus.valueOf(rs.getString("status"));
+    RoomStatus status = RoomStatus.fromDbValue(rs.getString("status"));
 
     Room room = new Room(roomNumber, roomType, price, maxOccupancy, hasBalcony, isAvailable);
     room.setStatus(status);
@@ -168,7 +166,7 @@ public List<Room> findAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
 public void addRoomsBatch(List<Room> rooms) {
     String sql = "INSERT INTO rooms (room_number, room_type, price_per_night, " +
             "max_occupancy, has_balcony, amenities, is_available, status) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "VALUES (?, CAST(? AS room_type), ?, ?, ?, ?, ?, CAST(? AS room_status))";
     Connection conn = null;
     PreparedStatement pstmt = null;
 
@@ -187,7 +185,7 @@ public void addRoomsBatch(List<Room> rooms) {
             String amenitiesStr = String.join(", ", room.getAmenities());
             pstmt.setString(6, amenitiesStr);
             pstmt.setBoolean(7, room.isAvailable());
-            pstmt.setString(8, room.getStatus().name());
+            pstmt.setString(8, room.getStatus().getDbValue());
             pstmt.addBatch();
             // Execute every 1000 rows
             count++;

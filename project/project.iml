@@ -141,5 +141,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="postgresql-42.7.9" level="project" />
   </component>
 </module>

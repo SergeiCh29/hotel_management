@@ -27,7 +27,7 @@ public class BookingDAO {
 
         String sql = "INSERT INTO bookings (guests_guest_id, room_room_number, check_in_date, check_out_date, " +
                 "number_of_guests, total_price, status, is_paid, payment_method) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING booking_id";
+                "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS booking_status), ?, ?) RETURNING booking_id";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -38,7 +38,7 @@ public class BookingDAO {
             pstmt.setDate(4, Date.valueOf(booking.getCheckOutDate()));
             pstmt.setInt(5, booking.getNumberOfGuests());
             pstmt.setDouble(6, booking.getTotalPrice());
-            pstmt.setString(7, booking.getStatus().name());
+            pstmt.setString(7, booking.getStatus().getDbValue());
             pstmt.setBoolean(8, booking.isPaid());
             pstmt.setString(9, booking.getPaymentMethod());
 
@@ -114,6 +114,8 @@ public class BookingDAO {
             while (rs.next()) {
                 bookings.add(extractBookingFromResultSet(rs));
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return bookings;
     }
@@ -148,7 +150,7 @@ public class BookingDAO {
         }
 
         String sql = "UPDATE bookings SET check_in_date = ?, check_out_date = ?, number_of_guests = ?, " +
-                "total_price = ?, status = ?, is_paid = ?, payment_method = ? " +
+                "total_price = ?, status = CAST(? AS booking_status), is_paid = ?, payment_method = ? " +
                 "WHERE booking_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -158,7 +160,7 @@ public class BookingDAO {
             pstmt.setDate(2, Date.valueOf(booking.getCheckOutDate()));
             pstmt.setInt(3, booking.getNumberOfGuests());
             pstmt.setDouble(4, booking.getTotalPrice());
-            pstmt.setString(5, booking.getStatus().name());
+            pstmt.setString(5, booking.getStatus().getDbValue());
             pstmt.setBoolean(6, booking.isPaid());
             pstmt.setString(7, booking.getPaymentMethod());
             pstmt.setInt(8, booking.getBookingId());
@@ -202,11 +204,11 @@ public class BookingDAO {
         }
 
         // Update booking status
-        String sql = "UPDATE bookings SET status = ? WHERE booking_id = ?";
+        String sql = "UPDATE bookings SET status = CAST(? AS booking_status) WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, BookingStatus.CHECKED_IN.name());
+            pstmt.setString(1, BookingStatus.CHECKED_IN.getDbValue());
             pstmt.setInt(2, bookingId);
             pstmt.executeUpdate();
         }
@@ -232,11 +234,11 @@ public class BookingDAO {
         }
 
         // Update booking status
-        String sql = "UPDATE bookings SET status = ? WHERE booking_id = ?";
+        String sql = "UPDATE bookings SET status = CAST(? AS booking_status) WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, BookingStatus.CHECKED_OUT.name());
+            pstmt.setString(1, BookingStatus.CHECKED_OUT.getDbValue());
             pstmt.setInt(2, bookingId);
             pstmt.executeUpdate();
         }
@@ -262,11 +264,11 @@ public class BookingDAO {
             throw new IllegalStateException("Cannot cancel a booking that is already checked in or out.");
         }
 
-        String sql = "UPDATE bookings SET status = ? WHERE booking_id = ?";
+        String sql = "UPDATE bookings SET status = CAST(? AS booking_status) WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, BookingStatus.CANCELLED.name());
+            pstmt.setString(1, BookingStatus.CANCELLED.getDbValue());
             pstmt.setInt(2, bookingId);
             pstmt.executeUpdate();
         }
@@ -304,7 +306,7 @@ public class BookingDAO {
                                     Integer excludeBookingId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM bookings " +
                 "WHERE room_room_number = ? " +
-                "AND status NOT IN ('CANCELLED') " +
+                "AND status NOT IN ('Cancelled') " +
                 "AND check_in_date < ? " +
                 "AND check_out_date > ?";
 
@@ -370,7 +372,7 @@ public class BookingDAO {
                 rs.getBoolean("has_balcony"),
                 rs.getBoolean("is_available")
         );
-        room.setStatus(RoomStatus.valueOf(rs.getString("room_status")));
+        room.setStatus(RoomStatus.fromDbValue(rs.getString("room_status")));
 
         String amenitiesStr = rs.getString("amenities");
         if (amenitiesStr != null && !amenitiesStr.isEmpty()) {
@@ -389,7 +391,7 @@ public class BookingDAO {
                 rs.getInt("number_of_guests")
         );
         booking.setTotalPrice(rs.getDouble("total_price"));
-        booking.setStatus(BookingStatus.valueOf(rs.getString("status")));
+        booking.setStatus(BookingStatus.fromDbValue(rs.getString("status")));
         booking.setIsPaid(rs.getBoolean("is_paid"));
         booking.setPaymentMethod(rs.getString("payment_method"));
 

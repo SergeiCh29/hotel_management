@@ -22,21 +22,18 @@ public class GuestDAO {
             pstmt.setInt(5, guest.getLoyaltyPoints());
             pstmt.setString(6, guest.getNationality());
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    int generatedId = rs.getInt("guest_id");
-                    guest.setGuestId(generatedId);
-                    System.out.println("Booking inserted with ID: " + generatedId);
-                } else {
-                    throw new SQLException("Creating booking failed, no ID returned.");
-                }
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int generatedId = rs.getInt(1);
+                guest.setId(generatedId);  // you need a setId method in Guest (inherited from Person)
             }
+            System.out.println("Guest added: " + guest.getFullName() + " (ID: " + guest.getId() + ")");
 
         } catch (SQLException e) {
             if (e.getSQLState().equals("23505")) {
                 System.err.println("Email already exists: " + guest.getEmail());
             } else {
-                e.printStackTrace(); // Other SQL error
+                e.printStackTrace();
             }
         }
     }
