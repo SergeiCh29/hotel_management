@@ -31,7 +31,8 @@ public class HotelManagementGUI extends JFrame {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Guests", new GuestsPanel(guests, guestDAO));
         tabbedPane.addTab("Rooms", new RoomsPanel(rooms, roomDAO));
-        tabbedPane.addTab("Bookings", new BookingsPanel(bookings, bookingDAO));
+        tabbedPane.addTab("Bookings", new BookingsPanel(bookings, bookingDAO, guestDAO));
+        tabbedPane.addTab("Performance", new PerformancePanel());
 
         add(tabbedPane);
     }

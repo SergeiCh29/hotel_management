@@ -347,6 +347,98 @@ public class BookingDAO {
         }
     }
 
+    public List<Booking> findByDateRange(LocalDate start, LocalDate end) {
+        List<Booking> bookings = new ArrayList<>();
+        if (start == null || end == null || !end.isAfter(start)) {
+            return bookings; // empty list for invalid input
+        }
+
+        String sql = """
+        SELECT b.*, g.*,
+            r.room_number, r.room_type, r.price_per_night, r.max_occupancy, r.has_balcony,
+            r.amenities, r.is_available, r.status AS room_status
+        FROM bookings b
+        JOIN guests g ON b.guests_guest_id = g.guest_id
+        JOIN rooms r ON b.room_room_number = r.room_number
+        WHERE b.check_in_date <= ? AND b.check_out_date >= ?
+                ORDER BY b.check_in_date
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setDate(1, Date.valueOf(start));
+            pstmt.setDate(2, Date.valueOf(end));
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    bookings.add(extractBookingFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bookings;
+
+    }
+
+    public List<Booking> findByStatus(BookingStatus status) {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = """
+        SELECT b.*, g.*,
+               r.room_number, r.room_type, r.price_per_night, r.max_occupancy, r.has_balcony,
+               r.amenities, r.is_available, r.status AS room_status
+        FROM bookings b
+        JOIN guests g ON b.guests_guest_id = g.guest_id
+        JOIN rooms r ON b.room_room_number = r.room_number
+        WHERE b.status = CAST(? AS booking_status)
+        ORDER BY b.check_in_date
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, status.getDbValue());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    bookings.add(extractBookingFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bookings;
+    }
+
+    public List<Booking> findByGuest(int guestId) {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = """
+        SELECT b.*, g.*,
+               r.room_number, r.room_type, r.price_per_night, r.max_occupancy, r.has_balcony,
+               r.amenities, r.is_available, r.status AS room_status
+        FROM bookings b
+        JOIN guests g ON b.guests_guest_id = g.guest_id
+        JOIN rooms r ON b.room_room_number = r.room_number
+        WHERE b.guests_guest_id = ?
+        ORDER BY b.check_in_date DESC
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, guestId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    bookings.add(extractBookingFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bookings;
+    }
     /**
      * Extracts a Booking object from a ResultSet that contains joined data from bookings, guests, and rooms. Assumes column names as aliased in the JOIN queries.
      * @param rs the ResultSet positioned at a valid row

@@ -1,6 +1,8 @@
 package ui;
 
+import logic.Guest;
 import logic.Room;
+import logic.RoomType;
 import db.RoomDAO;
 import javax.swing.*;
 import javax.swing.event.*;
@@ -8,6 +10,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.time.LocalDate;
 import java.util.List;
 
 public class RoomsPanel extends HotelDataPanel {
@@ -25,6 +28,162 @@ public class RoomsPanel extends HotelDataPanel {
         populateTable();
         setupFilter();
         refreshButton.addActionListener(e -> refreshFromDatabase());
+        setupSearchMenu();
+    }
+
+    private void setupSearchMenu() {
+        JPopupMenu searchMenu = new JPopupMenu();
+
+        JMenuItem typeItem = new JMenuItem("By Type");
+        JMenuItem priceItem = new JMenuItem("By Price Range");
+        JMenuItem availableItem = new JMenuItem("Available Rooms");
+
+        typeItem.addActionListener(e -> searchByType());
+        priceItem.addActionListener(e -> searchByPriceRange());
+        availableItem.addActionListener(e -> searchByAvailable());
+
+        searchMenu.add(typeItem);
+        searchMenu.add(priceItem);
+        searchMenu.add(availableItem);
+
+        setSearchMenu(searchMenu);
+    }
+
+    private void searchByType() {
+        RoomType[] types = RoomType.values();
+        RoomType selected = (RoomType) JOptionPane.showInputDialog(this,
+                "Select room type:", "Search by Type",
+                JOptionPane.QUESTION_MESSAGE, null, types, types[0]);
+        if (selected == null) return;
+
+        SwingWorker<List<Room>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Room> doInBackground() {
+                return roomDAO.findRoomsByType(selected);
+            }
+            @Override
+            protected void done() {
+                try {
+                    rooms = get();
+                    populateTable();
+                    if (rooms.isEmpty()) {
+                        JOptionPane.showMessageDialog(RoomsPanel.this, "No rooms of type " + selected + " found.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(RoomsPanel.this, "Search error: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void searchByPriceRange() {
+        // Create input fields
+        JTextField minField = new JTextField(10);
+        JTextField maxField = new JTextField(10);
+
+        JPanel panel = new JPanel(new GridLayout(2, 2));
+        panel.add(new JLabel("Minimum price:"));
+        panel.add(minField);
+        panel.add(new JLabel("Maximum price:"));
+        panel.add(maxField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel,
+                "Enter Price Range", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                double min = Double.parseDouble(minField.getText().trim());
+                double max = Double.parseDouble(maxField.getText().trim());
+
+                // Validate
+                if (min < 0 || max < 0 || min > max) {
+                    JOptionPane.showMessageDialog(this,
+                            "Invalid range. Please ensure min ≤ max and both are non‑negative.");
+                    return;
+                }
+
+                SwingWorker<List<Room>, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected List<Room> doInBackground() {
+                        return roomDAO.findRoomsByPriceRange(min, max);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            rooms = get();
+                            populateTable();
+                            if (rooms.isEmpty()) {
+                                JOptionPane.showMessageDialog(RoomsPanel.this,
+                                        "No rooms found in that price range.");
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(RoomsPanel.this,
+                                    "Search error: " + ex.getMessage());
+                        }
+                    }
+                };
+                worker.execute();
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Please enter valid numbers.");
+            }
+        }
+    }
+
+
+    private void searchByAvailable() {
+        JTextField checkInField = new JTextField(10);
+        JTextField checkOutField = new JTextField(10);
+
+        JPanel panel = new JPanel(new GridLayout(2, 2));
+        panel.add(new JLabel("Check-in (yyyy-mm-dd):"));
+        panel.add(checkInField);
+        panel.add(new JLabel("Check-out (yyyy-mm-dd):"));
+        panel.add(checkOutField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel,
+                "Dates", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                LocalDate checkIn = LocalDate.parse(checkInField.getText().trim());
+                LocalDate checkOut = LocalDate.parse(checkOutField.getText().trim());
+
+                if (!checkOut.isAfter(checkIn)) {
+                    JOptionPane.showMessageDialog(this,
+                            "Check-out must be after check-in.");
+                    return;
+                }
+
+                SwingWorker<List<Room>, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected List<Room> doInBackground() {
+                        return roomDAO.findAvailableRooms(checkIn, checkOut);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            rooms = get();
+                            populateTable();
+                            if (rooms.isEmpty()) {
+                                JOptionPane.showMessageDialog(RoomsPanel.this,
+                                        "No rooms available for those dates.");
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(RoomsPanel.this,
+                                    "Search error: " + ex.getMessage());
+                        }
+                    }
+                };
+                worker.execute();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid date format. Please use yyyy-mm-dd.");
+            }
+        }
     }
 
     private void populateTable() {

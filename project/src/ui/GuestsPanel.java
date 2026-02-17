@@ -17,7 +17,7 @@ public class GuestsPanel extends HotelDataPanel {
     private DefaultTableModel tableModel;
     private TableRowSorter<DefaultTableModel> sorter;
     private List<Guest> guests;
-    private GuestDAO guestDAO; // or DatabaseConnector-like class
+    private GuestDAO guestDAO;
 
     public GuestsPanel(List<Guest> guests, GuestDAO dao) {
         super("Guests");
@@ -27,6 +27,99 @@ public class GuestsPanel extends HotelDataPanel {
         populateTable();
         setupFilter();
         refreshButton.addActionListener(e -> refreshFromDatabase());
+        setupSearchMenu();
+    }
+
+    private void setupSearchMenu() {
+        JPopupMenu searchMenu = new JPopupMenu();
+
+        JMenuItem nameItem = new JMenuItem("By Name");
+        JMenuItem emailItem = new JMenuItem("By Email");
+        JMenuItem vipItem = new JMenuItem("By VIP Status");
+
+        nameItem.addActionListener(e -> searchByName());
+        emailItem.addActionListener(e -> searchByEmail());
+        vipItem.addActionListener(e -> searchVIP());
+
+        searchMenu.add(nameItem);
+        searchMenu.add(emailItem);
+        searchMenu.add(vipItem);
+
+        setSearchMenu(searchMenu);  // attach to the base search button
+    }
+
+    private void searchByName() {
+        String name = JOptionPane.showInputDialog(this, "Enter name to search:", "Search by Name", JOptionPane.QUESTION_MESSAGE);
+        if (name == null || name.trim().isEmpty()) return;
+
+        SwingWorker<List<Guest>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Guest> doInBackground() {
+                return guestDAO.searchByName(name.trim());
+            }
+            @Override
+            protected void done() {
+                try {
+                    guests = get();
+                    populateTable();
+                    if (guests.isEmpty()) {
+                        JOptionPane.showMessageDialog(GuestsPanel.this, "No guests found with that name.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(GuestsPanel.this, "Search error: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void searchByEmail() {
+        String email = JOptionPane.showInputDialog(this, "Enter email address:", "Search by Email", JOptionPane.QUESTION_MESSAGE);
+        if (email == null || email.trim().isEmpty()) return;
+
+        SwingWorker<Guest, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Guest doInBackground() {
+                return guestDAO.findByEmail(email.trim());
+            }
+            @Override
+            protected void done() {
+                try {
+                    Guest g = get();
+                    if (g != null) {
+                        guests = List.of(g);
+                        populateTable();
+                    } else {
+                        JOptionPane.showMessageDialog(GuestsPanel.this, "No guest found with that email.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(GuestsPanel.this, "Search error: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void searchVIP() {
+        SwingWorker<List<Guest>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Guest> doInBackground() {
+                return guestDAO.findVIPGuests();
+            }
+            @Override
+            protected void done() {
+                try {
+                    guests = get();
+                    populateTable();
+                    if (guests.isEmpty()) {
+                        JOptionPane.showMessageDialog(GuestsPanel.this, "No VIP guests found.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(GuestsPanel.this, "Search error: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void populateTable() {

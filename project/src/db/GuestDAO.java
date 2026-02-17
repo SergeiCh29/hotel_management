@@ -115,12 +115,90 @@ public class GuestDAO {
         }
     }
 
-    public Guest findByEmail(String email) {
-        Guest guest = null;
-        return guest;
+    /**
+     * Searches for guests whose first name or last name contains the given text (case‑insensitive).
+     * @param namePart the search string (can be empty or null)
+     * @return list of matching guests (never null)
+     */
+    public List<Guest> searchByName(String namePart) {
+        List<Guest> result = new ArrayList<>();
+
+        // If the search string is null or empty, return all guests
+        if (namePart == null || namePart.trim().isEmpty()) {
+            return getAllGuests();
+        }
+
+        String searchPattern = "%" + namePart.trim().toLowerCase() + "%";
+        String sql = "SELECT * FROM guests WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? ORDER BY last_name, first_name";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    result.add(extractGuestFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
-    public List<Guest> searchGuestsByName(String name) { return List.of(); }
+    /**
+     * Finds all guests who qualify as VIP (loyalty points > 1000 OR more than 5 bookings).
+     * @return list of VIP guests
+     */
+    public List<Guest> findVIPGuests() {
+        List<Guest> vipGuests = new ArrayList<>();
+
+        String sql = """
+        SELECT * FROM guests g
+        WHERE g.loyalty_points > 1000
+           OR (
+               SELECT COUNT(*) FROM bookings b
+               WHERE b.guests_guest_id = g.guest_id
+           ) > 5
+        ORDER BY g.loyalty_points DESC
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                // Extract guest data using your existing helper
+                Guest guest = extractGuestFromResultSet(rs);
+                vipGuests.add(guest);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return vipGuests;
+    }
+
+    public Guest findByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+        String sql = "SELECT * FROM guests WHERE email = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email.trim());
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return extractGuestFromResultSet(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
 
     private Guest extractGuestFromResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("guest_id");

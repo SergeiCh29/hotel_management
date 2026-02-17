@@ -150,17 +150,78 @@ private Room extractRoomFromResultSet(ResultSet rs) throws SQLException {
 }
 
 public List<Room> findRoomsByType(RoomType type) {
-    String sql = "SELECT * FROM rooms WHERE room_type = ?";
-    // ... use PreparedStatement, collect results
-    return List.of();
+    List<Room> rooms = new ArrayList<>();
+    if (type == null) return rooms;
+
+    String sql = "SELECT * FROM rooms WHERE room_type = CAST(? AS room_type) ORDER BY room_number";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setString(1, type.name());
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                rooms.add(extractRoomFromResultSet(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return rooms;
 }
 
 public List<Room> findAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
-    String sql = "SELECT * FROM rooms r WHERE NOT EXISTS " +
-            "(SELECT 1 FROM bookings b WHERE b.room_number = r.room_number " +
-            "AND b.check_in_date < ? AND b.check_out_date > ?)";
-    // ...
-    return List.of();
+    List<Room> availableRooms = new ArrayList<>();
+    if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
+        return availableRooms; // empty list for invalid input
+    }
+
+        String sql = "SELECT * FROM rooms r WHERE NOT EXISTS " +
+            "(SELECT 1 FROM bookings b WHERE b.room_room_number = r.room_number " +
+            "AND b.status NOT IN ('Cancelled') AND b.check_in_date < ? AND b.check_out_date > ?)" +
+                "ORDER BY r.room_number";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setDate(1, Date.valueOf(checkOut));
+        pstmt.setDate(2, Date.valueOf(checkIn));
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                availableRooms.add(extractRoomFromResultSet(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return availableRooms;
+}
+
+public List<Room> findRoomsByPriceRange(double min,  double max) {
+    List<Room> rooms = new ArrayList<>();
+    if (min > max) {
+        double temp = min;
+        min = max;
+        max = temp;
+    }
+    String sql = "SELECT * FROM rooms WHERE price_per_night BETWEEN ? AND ? ORDER BY price_per_night";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setDouble(1, min);
+        pstmt.setDouble(2, max);
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                rooms.add(extractRoomFromResultSet(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return rooms;
 }
 
 public void addRoomsBatch(List<Room> rooms) {

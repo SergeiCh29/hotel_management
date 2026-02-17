@@ -17,6 +17,10 @@ public class HotelManager {
         this.bookings = new ArrayList<>();
     }
 
+    public List<Room> getRooms() { return rooms; }
+    public List<Guest> getGuests() { return guests; }
+    public List<Booking> getBookings() { return bookings; }
+
     public void loadData(String roomsFile, String guestsFile, String bookingsFile) {
         try{
             this.rooms = ExcelImporter.importRooms(roomsFile);
