@@ -6,6 +6,7 @@ import logic.BookingStatus;
 import db.BookingDAO;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.event.DocumentEvent;
@@ -24,6 +25,8 @@ public class BookingsPanel extends HotelDataPanel {
     private BookingDAO bookingDAO;
     private GuestDAO guestDAO;
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private JButton checkInButton;
+    private JButton checkOutButton;
 
     public BookingsPanel(List<Booking> bookings, BookingDAO bookingDAO, GuestDAO guestDAO) {
         super("Bookings");
@@ -35,6 +38,7 @@ public class BookingsPanel extends HotelDataPanel {
         setupFilter();
         refreshButton.addActionListener(e -> refreshFromDatabase());
         setupSearchMenu();
+        setupCheckButtons();
     }
 
     private void setupSearchMenu() {
@@ -134,7 +138,7 @@ public class BookingsPanel extends HotelDataPanel {
             };
             worker.execute();
 
-        } catch (HeadlessException ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Invalid date format. Please use yyyy-mm-dd.");
         }
@@ -144,10 +148,15 @@ public class BookingsPanel extends HotelDataPanel {
         tableModel.setRowCount(0);
         for (Booking b : bookings) {
             tableModel.addRow(new Object[]{
-                    b.getBookingId(), b.getGuest().getFullName(), b.getRoom().getRoomNumber(),
-                    b.getCheckInDate().format(DATE_FORMAT), b.getCheckOutDate().format(DATE_FORMAT),
-                    b.getNumberOfGuests(), String.format("%.2f", b.getTotalPrice()),
-                    b.getStatus().getDbValue(), b.isPaid() ? "Yes" : "No"
+                    b.getBookingId(),
+                    b.getGuest().getFullName(),
+                    b.getRoom().getRoomNumber(),
+                    b.getCheckInDate().format(DATE_FORMAT),
+                    b.getCheckOutDate().format(DATE_FORMAT),
+                    b.getNumberOfGuests(),
+                    b.getTotalPrice(),
+                    b.getStatus().getDbValue(),
+                    b.isPaid() ? "Yes" : "No"
             });
         }
     }
@@ -236,21 +245,151 @@ public class BookingsPanel extends HotelDataPanel {
             }
         });
     }
+    
+    
+    private void setupCheckButtons() {
+        checkInButton = new JButton("Check In");
+        checkOutButton = new JButton("Check Out");
+        checkInButton.setEnabled(false);
+        checkOutButton.setEnabled(false);
+
+        rightPanel.add(checkInButton);
+        rightPanel.add(checkOutButton);
+
+        checkInButton.addActionListener(e -> performCheckIn());
+        checkOutButton.addActionListener(e -> performCheckOut());
+
+        // Enable/disable based on selection
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                updateButtonState();
+            }
+        });
+    }
+
+    private void updateButtonState() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1 || bookings.isEmpty()) {
+            checkInButton.setEnabled(false);
+            checkOutButton.setEnabled(false);
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        Booking booking = bookings.get(modelRow);
+        checkInButton.setEnabled(booking.getStatus() == BookingStatus.CONFIRMED);
+        checkOutButton.setEnabled(booking.getStatus() == BookingStatus.CHECKED_IN);
+    }
+
+    private void performCheckIn() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) return;
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        Booking booking = bookings.get(modelRow);
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Check in guest " + booking.getGuest().getFullName() + "?",
+                "Confirm Check In", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                bookingDAO.checkIn(booking.getBookingId());
+                return null;
+            }
+            @Override
+            protected void done() {
+                try {
+                    get(); // check for exceptions
+                    refreshFromDatabase();
+                    JOptionPane.showMessageDialog(BookingsPanel.this, "Check-in successful.");
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(BookingsPanel.this,
+                            "Check-in failed: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void performCheckOut() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) return;
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        Booking booking = bookings.get(modelRow);
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Check out guest " + booking.getGuest().getFullName() + "?",
+                "Confirm Check Out", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                bookingDAO.checkOut(booking.getBookingId());
+                return null;
+            }
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    refreshFromDatabase();
+                    JOptionPane.showMessageDialog(BookingsPanel.this, "Check-out successful.");
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(BookingsPanel.this,
+                            "Check-out failed: " + ex.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
 
     @Override
     protected void initComponents() {
         tableModel = new DefaultTableModel(new String[]{
                 "ID", "Guest", "Room", "Check-in", "Check-out", "Guests", "Total", "Status", "Paid"
-        }, 0);
+        }, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                switch (columnIndex) {
+                    case 0: return Integer.class;   // ID
+                    case 1: return String.class;    // Guest name
+                    case 2: return Integer.class;   // Room number
+                    case 3: return String.class;    // Check-in (formatted date)
+                    case 4: return String.class;    // Check-out
+                    case 5: return Integer.class;   // Number of guests
+                    case 6: return Double.class;    // Total price
+                    case 7: return String.class;    // Status
+                    case 8: return String.class;    // Paid
+                    default: return Object.class;
+                }
+            }
+        };
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true);
 
+        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            protected void setValue(Object value) {
+                if (value instanceof Double) {
+                    setText(String.format("%.2f", (Double) value));
+                } else {
+                    super.setValue(value);
+                }
+            }
+        });
+
         table.getSelectionModel().addListSelectionListener(e -> {
-            int row = table.convertRowIndexToModel(table.getSelectedRow());
-            if (row >= 0 && row < bookings.size()) {
-                Booking b = bookings.get(row);
-                showDetails(formatBookingDetails(b));
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int modelRow = table.convertRowIndexToModel(selectedRow);
+                    if (modelRow >= 0 && modelRow < bookings.size()) {
+                        Booking b = bookings.get(modelRow);
+                        showDetails(formatBookingDetails(b));
+                    }
+                }
             }
         });
 

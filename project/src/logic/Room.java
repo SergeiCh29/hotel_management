@@ -22,7 +22,6 @@ public class Room {
         this.roomPricePerNight = RoomPricePerNight;
         this.maxOccupancy = maxOccupancy;
         this.hasBalcony = hasBalcony;
-//        for (String amenity : amenities) {this.amenities.add(amenity);}
         this.isAvailable = IsAvailable;
         this.status = RoomStatus.CLEAN;
     }

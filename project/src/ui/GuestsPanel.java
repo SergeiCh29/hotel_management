@@ -138,11 +138,11 @@ public class GuestsPanel extends HotelDataPanel {
     }
 
     private void refreshFromDatabase() {
-        // Use SwingWorker to avoid blocking EDT
+        // SwingWorker to avoid blocking EDT
         SwingWorker<List<Guest>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<Guest> doInBackground() throws Exception {
-                return guestDAO.getAllGuests(); // your DAO method
+                return guestDAO.getAllGuests();
             }
             @Override
             protected void done() {
@@ -193,20 +193,38 @@ public class GuestsPanel extends HotelDataPanel {
 
     @Override
     protected void initComponents() {
-        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Email", "Phone", "Nationality", "Points","VIP"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Email", "Phone", "Nationality", "Points","VIP"}, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                switch (columnIndex) {
+                    case 0: return Integer.class;   // ID
+                    case 1: return String.class;    // name
+                    case 2: return String.class;    // email
+                    case 3: return String.class;    // phone
+                    case 4: return String.class;    // nationality
+                    case 5: return Integer.class;   // points
+                    case 6: return String.class;    // vip
+                    default: return Object.class;
+                }
+            }
+        };
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true); // enable sorting
 
         table.getSelectionModel().addListSelectionListener(e -> {
-            int row = table.convertRowIndexToModel(table.getSelectedRow());
-            if (row >= 0 && row < guests.size()) {
-                Guest g = guests.get(row);
-                showDetails(formatGuestDetails(g));
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int modelRow = table.convertRowIndexToModel(selectedRow);
+                    if (modelRow >= 0 && modelRow < guests.size()) {
+                        Guest g = guests.get(modelRow);
+                        showDetails(formatGuestDetails(g));
+                    }
+                }
             }
         });
 
-        // Double-click to show full details
         table.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
@@ -229,8 +247,8 @@ public class GuestsPanel extends HotelDataPanel {
     private String formatGuestDetails(Guest g) {
         return String.format("ID: %d\nName: %s %s\nEmail: %s\nPhone: %s\nNationality: %s\nLoyalty: %d\nVIP: %s\nBookings: %d",
                 g.getId(), g.getFirstName(), g.getLastName(),
-                g.getEmail(), g.getPhone(), g.getLoyaltyPoints(),
-                g.isVIP() ? "Yes" : "No",
+                g.getEmail(), g.getPhone(), g.getNationality(),
+                g.getLoyaltyPoints(), g.isVIP() ? "Yes" : "No",
                 g.getBookingHistory().size());
     }
 }

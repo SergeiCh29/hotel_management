@@ -21,8 +21,8 @@ public class RoomDAO {
             pstmt.setString(2, room.getRoomType().name());
             pstmt.setDouble(3, room.getRoomPricePerNight());
             pstmt.setInt(4, room.getMaxOccupancy());
-            pstmt.setBoolean(5, room.hasBalcony());   // add getter if missing
-            // Convert amenities list to comma-separated string
+            pstmt.setBoolean(5, room.hasBalcony());
+            // Converting amenities list to comma-separated string
             String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(6, amenitiesStr);
             pstmt.setBoolean(7, room.isAvailable());
@@ -137,10 +137,10 @@ private Room extractRoomFromResultSet(ResultSet rs) throws SQLException {
     Room room = new Room(roomNumber, roomType, price, maxOccupancy, hasBalcony, isAvailable);
     room.setStatus(status);
 
-    // Parse amenities
+    // Parsing amenities
     String amenitiesStr = rs.getString("amenities");
     if (amenitiesStr != null && !amenitiesStr.isEmpty()) {
-        String[] items = amenitiesStr.split(", ");
+        String[] items = amenitiesStr.split(",");
         for (String item : items) {
             room.addAmenity(item.trim());
         }
@@ -177,7 +177,7 @@ public List<Room> findAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
         return availableRooms; // empty list for invalid input
     }
 
-        String sql = "SELECT * FROM rooms r WHERE NOT EXISTS " +
+        String sql = "SELECT * FROM rooms r WHERE r.is_available = true AND NOT EXISTS " +
             "(SELECT 1 FROM bookings b WHERE b.room_room_number = r.room_number " +
             "AND b.status NOT IN ('Cancelled') AND b.check_in_date < ? AND b.check_out_date > ?)" +
                 "ORDER BY r.room_number";
@@ -234,7 +234,7 @@ public void addRoomsBatch(List<Room> rooms) {
     try {
         conn = DatabaseConnection.getConnection();
         pstmt = conn.prepareStatement(sql);
-        conn.setAutoCommit(false); // disable auto-commit for batch
+        conn.setAutoCommit(false);
         int count = 0;
         int batchSize = 1000;
         for (Room room : rooms) {
@@ -243,7 +243,7 @@ public void addRoomsBatch(List<Room> rooms) {
             pstmt.setDouble(3, room.getRoomPricePerNight());
             pstmt.setInt(4, room.getMaxOccupancy());
             pstmt.setBoolean(5, room.hasBalcony());
-            String amenitiesStr = String.join(", ", room.getAmenities());
+            String amenitiesStr = String.join(",", room.getAmenities());
             pstmt.setString(6, amenitiesStr);
             pstmt.setBoolean(7, room.isAvailable());
             pstmt.setString(8, room.getStatus().getDbValue());
@@ -255,7 +255,8 @@ public void addRoomsBatch(List<Room> rooms) {
             }
         }
         pstmt.executeBatch(); // final batch
-        conn.commit(); // commit transaction
+        conn.commit(); // commiting transaction
+        System.out.println("Batch inserted " + rooms.size() + " rooms.");
 
     } catch (SQLException e) {
         if (conn != null) {

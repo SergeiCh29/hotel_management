@@ -23,7 +23,7 @@ public class HotelManagementGUI extends JFrame {
         roomDAO = new RoomDAO();
         bookingDAO = new BookingDAO();
 
-        // Load initial data (could be done in background)
+        // Load initial data
         List<Guest> guests = guestDAO.getAllGuests();
         List<Room> rooms = roomDAO.getAllRooms();
         List<Booking> bookings = bookingDAO.getAllBookings();

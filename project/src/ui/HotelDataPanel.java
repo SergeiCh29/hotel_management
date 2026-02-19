@@ -20,7 +20,7 @@ public abstract class HotelDataPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(titleLabel, BorderLayout.WEST);
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         searchField = new JTextField(15);
         searchField.setToolTipText("Type to filter...");
         searchButton = new JButton("Search");

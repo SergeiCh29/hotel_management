@@ -5,7 +5,9 @@ import logic.Room;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GuestDAO {
     public void addGuest(Guest guest) {
@@ -115,11 +117,7 @@ public class GuestDAO {
         }
     }
 
-    /**
-     * Searches for guests whose first name or last name contains the given text (case‑insensitive).
-     * @param namePart the search string (can be empty or null)
-     * @return list of matching guests (never null)
-     */
+    // Searches for guests whose first name or last name contains the given text (case‑insensitive).
     public List<Guest> searchByName(String namePart) {
         List<Guest> result = new ArrayList<>();
 
@@ -148,20 +146,14 @@ public class GuestDAO {
         return result;
     }
 
-    /**
-     * Finds all guests who qualify as VIP (loyalty points > 1000 OR more than 5 bookings).
-     * @return list of VIP guests
-     */
+    // Finds all guests who are VIP (loyalty points > 1000 OR more than 5 bookings)
     public List<Guest> findVIPGuests() {
         List<Guest> vipGuests = new ArrayList<>();
 
         String sql = """
         SELECT * FROM guests g
         WHERE g.loyalty_points > 1000
-           OR (
-               SELECT COUNT(*) FROM bookings b
-               WHERE b.guests_guest_id = g.guest_id
-           ) > 5
+           OR (SELECT COUNT(*) FROM bookings b WHERE b.guests_guest_id = g.guest_id) > 5
         ORDER BY g.loyalty_points DESC
         """;
 
@@ -170,7 +162,6 @@ public class GuestDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                // Extract guest data using your existing helper
                 Guest guest = extractGuestFromResultSet(rs);
                 vipGuests.add(guest);
             }
@@ -213,5 +204,77 @@ public class GuestDAO {
        return guest;
     }
 
+    public Map<Integer, Guest> addGuestsBatch(List<Guest> excelGuests) throws SQLException {
+        String sql = "INSERT INTO guests (first_name, last_name, email, phone, loyalty_points, nationality) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet generatedKeys = null;
+        Map<Integer, Guest> guestMap = new HashMap<>();
 
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            conn.setAutoCommit(false);
+
+            int count = 0;
+            int batchSize = 1000;
+
+            for (Guest original : excelGuests) {
+                pstmt.setString(1, original.getFirstName());
+                pstmt.setString(2, original.getLastName());
+                pstmt.setString(3, original.getEmail());
+                pstmt.setString(4, original.getPhone());
+                pstmt.setInt(5, original.getLoyaltyPoints());
+                pstmt.setString(6, original.getNationality());
+                pstmt.addBatch();
+
+                count++;
+                if (count % batchSize == 0) {
+                    pstmt.executeBatch();
+                }
+            }
+
+            pstmt.executeBatch(); // final batch
+
+            // Retrieving all generated keys (in insertion order)
+            generatedKeys = pstmt.getGeneratedKeys();
+
+            int index = 0;
+            while (generatedKeys.next() && index < excelGuests.size()) {
+                int newId = generatedKeys.getInt(1);
+                Guest original = excelGuests.get(index);
+
+                // Creating a new Guest object with the generated ID
+                Guest newGuest = new Guest(
+                        newId,
+                        original.getFirstName(),
+                        original.getLastName(),
+                        original.getEmail(),
+                        original.getPhone(),
+                        original.getLoyaltyPoints(),
+                        original.getNationality()
+                );
+
+                // Mapping using the original Excel ID as key
+                guestMap.put(original.getId(), newGuest);
+                index++;
+            }
+
+            conn.commit();
+            System.out.println("✅ Batch inserted " + excelGuests.size() + " guests.");
+
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            try { if (generatedKeys != null) generatedKeys.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (pstmt != null) pstmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+
+        return guestMap;
+    }
 }

@@ -15,9 +15,6 @@ public class Booking {
     private boolean isPaid = false;
     private String paymentMethod;
 
-//    private String paymentMethod;
-//    private boolean isPAid;
-
     public Booking(int bookingId, Guest guest, Room room, LocalDate checkInDate, LocalDate checkOutDate, int numberOfGuests) {
         this.bookingId = bookingId;
         this.guest = guest;
@@ -81,10 +78,6 @@ public class Booking {
     public String toString(){
         return "logic.Booking id: " + bookingId + ", logic.Guest id: " + guest.getId() + ", logic.Room number: " + room.getRoomNumber() + ", Check-in date: " + checkInDate + ", Check-out date: " + checkOutDate + ", Number of guests: " + numberOfGuests + ", Total price: " + totalPrice + ", Status: " + status;
     }
-
-//    public double calculateTotalPrice(int nights) {
-//        return this.totalPrice = room.calculatePriceForStay(nights);
-//    }
 
     public void recalculateTotalPrice() throws IllegalStateException {
         if (room == null) {

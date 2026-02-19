@@ -1,7 +1,6 @@
 package ui;
 
 import logic.*;
-import utils.ExcelImporter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -76,9 +75,8 @@ public class PerformancePanel extends JPanel {
         String guestsFile = "data/guests.xlsx";
         String bookingsFile = "data/bookings.xlsx";
 
-        // Quick check if files exist
         if (!new File(roomsFile).exists()) {
-            resultArea.append("❌ rooms.xlsx not found in data/ folder.\n");
+            resultArea.append("rooms.xlsx not found in data/ folder.\n");
             return;
         }
 

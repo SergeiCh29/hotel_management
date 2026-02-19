@@ -11,16 +11,6 @@ import logic.*;
 
 public class ExcelImporter {
     // Import Rooms from Excel
-// Expected columns in rooms.xlsx:
-// 0: room_number (int)
-// 1: room_type (SINGLE/DOUBLE/DELUXE/SUITE)
-// 2: price_per_night (double)
-// 3: max_occupancy (int)
-// 4: has_balcony (1/0 or true/false)
-// 5: is_available (true/false)
-// 6: amenities (comma-separated, e.g., "WiFi,AC")
-// 7: status (CLEAN/DIRTY/MAINTENANCE/OCCUPIED)
-
     public static List<Room> importRooms(String filePath) throws Exception {
         List<Room> rooms = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(new File(filePath));
@@ -60,15 +50,6 @@ public class ExcelImporter {
     }
 
     // Import Guests from Excel
-    // Expected columns in guests.xlsx:
-// 0: guest_id (int)
-// 1: first_name (str)
-// 2: last_name (str)
-// 3: email (str)
-// 4: phone (str)
-// 5: loyalty_points (int)
-// 6: nationality (str)
-
     public static List<Guest> importGuests(String filePath) throws Exception {
         List<Guest> guests = new ArrayList<>();
         try(FileInputStream fis = new FileInputStream(new File(filePath));
@@ -97,15 +78,6 @@ public class ExcelImporter {
 
 
     // Import Bookings from Excel
-    // Expected columns in bookings.xlsx:
-// 0: booking_id (int)
-// 1: guest_id (int)
-// 2: room_number (int)
-// 3: check_in_date (localDate)
-// 4: check_out_date (localDate)
-// 5: number_of_guests (int)
-// 6: total_price (double)
-// 7: status (str)
     public static List<Booking> importBookings(String filePath) throws Exception {
         List<Booking> bookings = new ArrayList<>();
         try(FileInputStream fis = new FileInputStream(new File(filePath));

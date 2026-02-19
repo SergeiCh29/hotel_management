@@ -2,10 +2,12 @@ package ui;
 
 import logic.Guest;
 import logic.Room;
+import logic.RoomStatus;
 import logic.RoomType;
 import db.RoomDAO;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
@@ -78,7 +80,7 @@ public class RoomsPanel extends HotelDataPanel {
     }
 
     private void searchByPriceRange() {
-        // Create input fields
+        // Creating input fields
         JTextField minField = new JTextField(10);
         JTextField maxField = new JTextField(10);
 
@@ -96,7 +98,6 @@ public class RoomsPanel extends HotelDataPanel {
                 double min = Double.parseDouble(minField.getText().trim());
                 double max = Double.parseDouble(maxField.getText().trim());
 
-                // Validate
                 if (min < 0 || max < 0 || min > max) {
                     JOptionPane.showMessageDialog(this,
                             "Invalid range. Please ensure min ≤ max and both are non‑negative.");
@@ -192,12 +193,12 @@ public class RoomsPanel extends HotelDataPanel {
             tableModel.addRow(new Object[]{
                     r.getRoomNumber(),
                     r.getRoomType(),
-                    String.format("%.2f", r.getRoomPricePerNight()), // Format price
+                    r.getRoomPricePerNight(), // Format price
                     r.getMaxOccupancy(),
                     r.hasBalcony() ? "Yes" : "No",                   // Boolean to readable
                     String.join(", ", r.getAmenities()),             // List to string
                     r.isAvailable() ? "Available" : "Booked",        // Boolean to status
-                    r.getStatus()
+                    r.getStatus().name()
             });
         }
     }
@@ -260,16 +261,46 @@ public class RoomsPanel extends HotelDataPanel {
     protected void initComponents() {
         tableModel = new DefaultTableModel(new String[]{
                 "Number", "Type", "Price", "Max",
-                "Balcony", "Amenities", "Availability", "Status"}, 0);
+                "Balcony", "Amenities", "Availability", "Status"}, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                switch (columnIndex) {
+                    case 0: return Integer.class;   // ID
+                    case 1: return String.class;  // type
+                    case 2: return Double.class;   // price
+                    case 3: return Integer.class;   // max
+                    case 4: return String.class;    // balcony
+                    case 5: return String.class;   // amenities
+                    case 6: return String.class;    // available
+                    case 7: return String.class;    // Status
+                    default: return Object.class;
+                }
+            }
+        };
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true); // enable sorting
 
+        table.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            protected void setValue(Object value) {
+                if (value instanceof Double) {
+                    setText(String.format("%.2f", (Double) value));
+                } else {
+                    super.setValue(value);
+                }
+            }
+        });
         table.getSelectionModel().addListSelectionListener(e -> {
-            int row = table.convertRowIndexToModel(table.getSelectedRow());
-            if (row >= 0 && row < rooms.size()) {
-                Room r = rooms.get(row);
-                showDetails(formatRoomDetails(r));
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int modelRow = table.convertRowIndexToModel(selectedRow);
+                    if (modelRow >= 0 && modelRow < rooms.size()) {
+                        Room r = rooms.get(modelRow);
+                        showDetails(formatRoomDetails(r));
+                    }
+                }
             }
         });
 

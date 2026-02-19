@@ -8,21 +8,13 @@ import java.util.List;
 
 public class BookingDAO {
 
-    /**
-     * Inserts a new booking into the database.
-     * Checks room availability before insertion.
-     * Retrieves the auto‑generated booking ID and sets it on the booking object.
-     * @param booking the Booking object to insert (must contain valid Guest and Room with IDs)
-     * @throws RoomNotAvailableException if the room is not available for the requested dates
-     * @throws SQLException if a database error occurs (e.g., foreign key violation)
-     */
+    // Inserts a new booking into the database.
     public void insertBooking(Booking booking) throws RoomNotAvailableException, SQLException {
-        // Validate availability
+        // Validating availability
         if (!isRoomAvailable(booking.getRoom().getRoomNumber(), booking.getCheckInDate(), booking.getCheckOutDate(), null)) {
             throw new RoomNotAvailableException("Room " + booking.getRoom().getRoomNumber() +" is not available from " + booking.getCheckInDate() + " to " + booking.getCheckOutDate());
         }
 
-        // Ensure total price is correctly calculated
         booking.recalculateTotalPrice();
 
         String sql = "INSERT INTO bookings (guests_guest_id, room_room_number, check_in_date, check_out_date, " +
@@ -42,7 +34,7 @@ public class BookingDAO {
             pstmt.setBoolean(8, booking.isPaid());
             pstmt.setString(9, booking.getPaymentMethod());
 
-            // Execute the query and get the returned ID
+            // Executing the query and get the returned ID
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int generatedId = rs.getInt("booking_id");
@@ -61,13 +53,35 @@ public class BookingDAO {
         }
     }
 
+    public void insertBookingWithoutCheck(Booking booking) throws SQLException {
+        booking.recalculateTotalPrice();
+
+        String sql = "INSERT INTO bookings (guests_guest_id, room_room_number, check_in_date, check_out_date, " +
+                "number_of_guests, total_price, status, is_paid, payment_method) " +
+                "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS booking_status), ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, booking.getGuest().getId());
+            pstmt.setInt(2, booking.getRoom().getRoomNumber());
+            pstmt.setDate(3, Date.valueOf(booking.getCheckInDate()));
+            pstmt.setDate(4, Date.valueOf(booking.getCheckOutDate()));
+            pstmt.setInt(5, booking.getNumberOfGuests());
+            pstmt.setDouble(6, booking.getTotalPrice());
+            pstmt.setString(7, booking.getStatus().getDbValue());
+            pstmt.setBoolean(8, booking.isPaid());
+            pstmt.setString(9, booking.getPaymentMethod());
+
+            pstmt.executeUpdate();
+            // Optionally retrieve generated ID if needed, but we skip for speed
+            System.out.println("Booking inserted for room " + booking.getRoom().getRoomNumber());
+        }
+    }
+
     /**
      * Retrieves a booking by its ID, including the associated Guest and Room objects.
      * Uses a JOIN to fetch all data in one query.
-     *
-     * @param id the booking ID
-     * @return the Booking object, or null if not found
-     * @throws SQLException if a database error occurs
      */
     public Booking getBookingById(int id) throws SQLException {
         String sql = "SELECT b.*, g.*, " +
@@ -91,12 +105,7 @@ public class BookingDAO {
         return null;
     }
 
-    /**
-     * Retrieves all bookings from the database, ordered by booking ID.
-     *
-     * @return a list of all bookings (never null)
-     * @throws SQLException if a database error occurs
-     */
+    // Retrieves all bookings from the database, ordered by booking ID.
     public List<Booking> getAllBookings() throws SQLException {
         List<Booking> bookings = new ArrayList<>();
         String sql = "SELECT b.*, g.*, " +
@@ -120,20 +129,14 @@ public class BookingDAO {
         return bookings;
     }
 
-    /**
-     * Updates an existing booking. If dates have changed, it rechecks availability (excluding the current booking) and recalculates the total price.
-     * @param booking the Booking object with updated data (must have a valid ID)
-     * @throws RoomNotAvailableException if the room is not available for the new dates
-     * @throws SQLException if a database error occurs
-     */
+    // Updates an existing booking. If dates have changed, it rechecks availability (excluding the current booking)
     public void updateBooking(Booking booking) throws RoomNotAvailableException, SQLException {
-        // Fetch the current booking from DB to compare dates
+        // Fetching the current booking from DB to compare dates
         Booking current = getBookingById(booking.getBookingId());
         if (current == null) {
             throw new SQLException("Booking with ID " + booking.getBookingId() + " not found.");
         }
 
-        // If dates or room changed, recheck availability
         boolean datesChanged = !current.getCheckInDate().equals(booking.getCheckInDate()) || !current.getCheckOutDate().equals(booking.getCheckOutDate());
         boolean roomChanged = current.getRoom().getRoomNumber() != booking.getRoom().getRoomNumber();
 
@@ -145,7 +148,6 @@ public class BookingDAO {
                 throw new RoomNotAvailableException("Room " + booking.getRoom().getRoomNumber() +
                         " is not available for the new dates.");
             }
-            // Recalculate price
             booking.recalculateTotalPrice();
         }
 
@@ -169,11 +171,7 @@ public class BookingDAO {
         }
     }
 
-    /**
-     * Deletes a booking by its ID
-     * @param bookingId the ID of the booking to delete
-     * @throws SQLException if a database error occurs
-     */
+    // Deletes a booking by its ID
     public void deleteBooking(int bookingId) throws SQLException {
         String sql = "DELETE FROM bookings WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -184,13 +182,7 @@ public class BookingDAO {
         }
     }
 
-    /**
-     * Checks a guest into the hotel.
-     * Updates the booking status to CHECKED_IN and marks the room as unavailable.
-     * @param bookingId the ID of the booking
-     * @throws SQLException if a database error occurs
-     * @throws IllegalStateException if the booking cannot be checked in (wrong status or date)
-     */
+    // Checks a guest into the hotel.
     public void checkIn(int bookingId) throws SQLException, IllegalStateException {
         Booking booking = getBookingById(bookingId);
         if (booking == null) {
@@ -203,7 +195,7 @@ public class BookingDAO {
             throw new IllegalStateException("Cannot check in before the check-in date.");
         }
 
-        // Update booking status
+        // Updating booking status
         String sql = "UPDATE bookings SET status = CAST(? AS booking_status) WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -213,17 +205,11 @@ public class BookingDAO {
             pstmt.executeUpdate();
         }
 
-        // Update room availability (mark as occupied)
+        // Updating room availability
         updateRoomAvailability(booking.getRoom().getRoomNumber(), false);
     }
 
-    /**
-     * Checks a guest out of the hotel.
-     * Updates the booking status to CHECKED_OUT and marks the room as available.
-     * @param bookingId the ID of the booking
-     * @throws SQLException if a database error occurs
-     * @throws IllegalStateException if the booking cannot be checked out (wrong status)
-     */
+    // Checks a guest out of the hotel.
     public void checkOut(int bookingId) throws SQLException, IllegalStateException {
         Booking booking = getBookingById(bookingId);
         if (booking == null) {
@@ -233,7 +219,6 @@ public class BookingDAO {
             throw new IllegalStateException("Only checked-in bookings can be checked out.");
         }
 
-        // Update booking status
         String sql = "UPDATE bookings SET status = CAST(? AS booking_status) WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -243,17 +228,10 @@ public class BookingDAO {
             pstmt.executeUpdate();
         }
 
-        // Update room availability (free the room)
         updateRoomAvailability(booking.getRoom().getRoomNumber(), true);
     }
 
-    /**
-     * Cancels a booking.
-     * Updates the status to CANCELLED and frees the room.
-     * @param bookingId the ID of the booking
-     * @throws SQLException if a database error occurs
-     * @throws IllegalStateException if the booking is already checked in/out
-     */
+    // Cancels a booking.
     public void cancelBooking(int bookingId) throws SQLException, IllegalStateException {
         Booking booking = getBookingById(bookingId);
         if (booking == null) {
@@ -276,13 +254,7 @@ public class BookingDAO {
         updateRoomAvailability(booking.getRoom().getRoomNumber(), true);
     }
 
-    /**
-     * Updates the payment information for a booking.
-     * Marks the booking as paid and records the method.
-     * @param bookingId the booking ID
-     * @param method the payment method (e.g., "Cash", "Credit Card")
-     * @throws SQLException if a database error occurs
-     */
+    // Updates the payment information for a booking.
     public void updatePayment(int bookingId, String method) throws SQLException {
         String sql = "UPDATE bookings SET is_paid = ?, payment_method = ? WHERE booking_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -295,13 +267,7 @@ public class BookingDAO {
         }
     }
 
-    /**
-     * Checks if a room is available for a given date range.
-     * Excludes a specific booking ID (useful for updates).
-     * @param excludeBookingId  ID of a booking to exclude from the check (null for new bookings)
-     * @return true if the room is available, false otherwise
-     * @throws SQLException if a database error occurs
-     */
+    // Checks if a room is available for a given date range. Excludes a specific booking ID
     private boolean isRoomAvailable(int roomNumber, LocalDate checkIn, LocalDate checkOut,
                                     Integer excludeBookingId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM bookings " +
@@ -332,10 +298,10 @@ public class BookingDAO {
                 }
             }
         }
-        return false; // fallback
+        return false;
     }
 
-    //Helper to update the availability of a room (Used by checkIn/checkOut to keep room status consistent)
+    //Helper to update the availability of a room
     private void updateRoomAvailability(int roomNumber, boolean available) throws SQLException {
         String sql = "UPDATE rooms SET is_available = ? WHERE room_number = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -350,7 +316,7 @@ public class BookingDAO {
     public List<Booking> findByDateRange(LocalDate start, LocalDate end) {
         List<Booking> bookings = new ArrayList<>();
         if (start == null || end == null || !end.isAfter(start)) {
-            return bookings; // empty list for invalid input
+            return bookings;
         }
 
         String sql = """
@@ -360,15 +326,15 @@ public class BookingDAO {
         FROM bookings b
         JOIN guests g ON b.guests_guest_id = g.guest_id
         JOIN rooms r ON b.room_room_number = r.room_number
-        WHERE b.check_in_date <= ? AND b.check_out_date >= ?
+        WHERE b.check_in_date < ? AND b.check_out_date > ?
                 ORDER BY b.check_in_date
         """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setDate(1, Date.valueOf(start));
-            pstmt.setDate(2, Date.valueOf(end));
+            pstmt.setDate(1, Date.valueOf(end));
+            pstmt.setDate(2, Date.valueOf(start));
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -439,12 +405,8 @@ public class BookingDAO {
         }
         return bookings;
     }
-    /**
-     * Extracts a Booking object from a ResultSet that contains joined data from bookings, guests, and rooms. Assumes column names as aliased in the JOIN queries.
-     * @param rs the ResultSet positioned at a valid row
-     * @return a fully populated Booking object
-     * @throws SQLException if column access fails
-     */
+
+     // Extracts a Booking object from a ResultSet that contains joined data from bookings, guests, and rooms.
     private Booking extractBookingFromResultSet(ResultSet rs) throws SQLException {
         Guest guest = new Guest(
                 rs.getInt("guest_id"),
@@ -488,5 +450,68 @@ public class BookingDAO {
         booking.setPaymentMethod(rs.getString("payment_method"));
 
         return booking;
+    }
+
+    public List<Booking> addBookingsBatch(List<Booking> bookings) throws SQLException {
+        String sql = "INSERT INTO bookings (guests_guest_id, room_room_number, check_in_date, check_out_date, " +
+                "number_of_guests, total_price, status, is_paid, payment_method) " +
+                "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS booking_status), ?, ?) RETURNING booking_id";
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            conn.setAutoCommit(false);
+
+            int count = 0;
+            int batchSize = 1000;
+
+            for (Booking b : bookings) {
+                pstmt.setInt(1, b.getGuest().getId());
+                pstmt.setInt(2, b.getRoom().getRoomNumber());
+                pstmt.setDate(3, Date.valueOf(b.getCheckInDate()));
+                pstmt.setDate(4, Date.valueOf(b.getCheckOutDate()));
+                pstmt.setInt(5, b.getNumberOfGuests());
+                pstmt.setDouble(6, b.getTotalPrice());
+                pstmt.setString(7, b.getStatus().getDbValue());
+                pstmt.setBoolean(8, b.isPaid());
+                pstmt.setString(9, b.getPaymentMethod());
+                pstmt.addBatch();
+
+                count++;
+                if (count % batchSize == 0) {
+                    pstmt.executeBatch();
+                }
+            }
+
+            pstmt.executeBatch(); // final batch
+
+            // Retrieve all generated booking IDs
+            rs = pstmt.getGeneratedKeys();
+            int index = 0;
+            while (rs.next() && index < bookings.size()) {
+                int generatedId = rs.getInt(1);
+                bookings.get(index).setBookingId(generatedId);
+                index++;
+            }
+
+            conn.commit();
+            System.out.println("✅ Batch inserted " + bookings.size() + " bookings.");
+
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            try { if (rs != null) rs.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (pstmt != null) pstmt.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+
+        return bookings;
     }
 }
