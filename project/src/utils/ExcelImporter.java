@@ -26,8 +26,8 @@ public class ExcelImporter {
                 double price = getNumericValue(row.getCell(2));
                 int maxOcc = (int) getNumericValue(row.getCell(3));
                 boolean hasBalcony = getNumericValue(row.getCell(4)) > 0;
-                boolean isAvailable = getCellValue(row.getCell(5)).equalsIgnoreCase("true");
-                String amenities = getCellValue(row.getCell(6));
+                String amenities = getCellValue(row.getCell(5));
+                boolean isAvailable = getNumericValue(row.getCell(6)) > 0;
                 String statusStr = getCellValue(row.getCell(7));
 
                 RoomType type = RoomType.valueOf(roomTypeStr.toUpperCase());

@@ -499,7 +499,7 @@ public class BookingDAO {
             }
 
             conn.commit();
-            System.out.println("✅ Batch inserted " + bookings.size() + " bookings.");
+            System.out.println("Batch inserted " + bookings.size() + " bookings.");
 
         } catch (SQLException e) {
             if (conn != null) {

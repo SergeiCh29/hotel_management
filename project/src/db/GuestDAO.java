@@ -217,9 +217,6 @@ public class GuestDAO {
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             conn.setAutoCommit(false);
 
-            int count = 0;
-            int batchSize = 1000;
-
             for (Guest original : excelGuests) {
                 pstmt.setString(1, original.getFirstName());
                 pstmt.setString(2, original.getLastName());
@@ -228,24 +225,15 @@ public class GuestDAO {
                 pstmt.setInt(5, original.getLoyaltyPoints());
                 pstmt.setString(6, original.getNationality());
                 pstmt.addBatch();
-
-                count++;
-                if (count % batchSize == 0) {
-                    pstmt.executeBatch();
-                }
             }
 
-            pstmt.executeBatch(); // final batch
+            pstmt.executeBatch(); // single batch
 
-            // Retrieving all generated keys (in insertion order)
             generatedKeys = pstmt.getGeneratedKeys();
-
             int index = 0;
             while (generatedKeys.next() && index < excelGuests.size()) {
                 int newId = generatedKeys.getInt(1);
-                Guest original = excelGuests.get(index);
-
-                // Creating a new Guest object with the generated ID
+                Guest original = excelGuests.get(index++);
                 Guest newGuest = new Guest(
                         newId,
                         original.getFirstName(),
@@ -255,26 +243,20 @@ public class GuestDAO {
                         original.getLoyaltyPoints(),
                         original.getNationality()
                 );
-
-                // Mapping using the original Excel ID as key
                 guestMap.put(original.getId(), newGuest);
-                index++;
             }
 
             conn.commit();
-            System.out.println("✅ Batch inserted " + excelGuests.size() + " guests.");
-
+            System.out.println("Batch inserted " + excelGuests.size() + " guests.");
         } catch (SQLException e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
-            }
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             throw e;
         } finally {
-            try { if (generatedKeys != null) generatedKeys.close(); } catch (SQLException e) { e.printStackTrace(); }
-            try { if (pstmt != null) pstmt.close(); } catch (SQLException e) { e.printStackTrace(); }
-            try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (generatedKeys != null) generatedKeys.close(); } catch (SQLException e) {}
+            try { if (pstmt != null) pstmt.close(); } catch (SQLException e) {}
+            try { if (conn != null) conn.close(); } catch (SQLException e) {}
         }
-
         return guestMap;
     }
 }
+

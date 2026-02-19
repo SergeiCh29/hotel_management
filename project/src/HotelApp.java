@@ -20,11 +20,10 @@ public class HotelApp {
                 System.out.println("Connected to database successfully.");
             }
 
-            clearDatabase();
-            importRoomsBatch();
-            Map<Integer, Guest> guestMap = importGuestsFromExcel();
-            System.out.println("Guest map size: " + guestMap.size());
-            importBookingsBatch(guestMap);
+//            clearDatabase();
+//            importRoomsBatch();
+//            Map<Integer, Guest> guestMap = importGuestsFromExcel();
+//            importBookingsBatch(guestMap);
 
             javax.swing.SwingUtilities.invokeLater(() -> {
                 try {
